@@ -12,5 +12,6 @@ body {
 
 /* Optional: If you have content that overflows and you want to disable scrolling */
 body, html {
-    overflow: hidden;
+    margin: 0;
+    min-height: 100%;
 }

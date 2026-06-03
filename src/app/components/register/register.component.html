@@ -1,1 +1,38 @@
-<p>register works!</p>
+<main class="auth-page">
+  <section class="auth-panel">
+    <div class="brand">
+      <span class="brand-mark">GS</span>
+      <div>
+        <h1>Create account</h1>
+        <p>Start saving your Geo Scratcher progress.</p>
+      </div>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="register()" class="auth-form">
+      <label>
+        Username
+        <input type="text" formControlName="username" autocomplete="username" />
+      </label>
+      <small *ngIf="registerForm.controls.username.touched && registerForm.controls.username.invalid">
+        Use 3+ letters, numbers, dots, dashes, or underscores.
+      </small>
+
+      <label>
+        Email
+        <input type="email" formControlName="email" autocomplete="email" />
+      </label>
+      <small *ngIf="registerForm.controls.email.touched && registerForm.controls.email.invalid">Enter a valid email.</small>
+
+      <label>
+        Password
+        <input type="password" formControlName="password" autocomplete="new-password" />
+      </label>
+      <small *ngIf="registerForm.controls.password.touched && registerForm.controls.password.invalid">Use at least 8 characters.</small>
+
+      <button type="submit" [disabled]="isSubmitting">{{ isSubmitting ? 'Creating...' : 'Create account' }}</button>
+    </form>
+
+    <p *ngIf="error" class="error">{{ error }}</p>
+    <p class="switch">Already have an account? <a routerLink="/login">Sign in</a></p>
+  </section>
+</main>

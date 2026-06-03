@@ -2,6 +2,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Country } from '../../interfaces/country';
 import { CommonModule } from '@angular/common';
 
+type CountryStatus = 'visited' | 'lived' | 'future';
+
 @Component({
   selector: 'app-country-status-modal',
   standalone: true,
@@ -11,10 +13,10 @@ import { CommonModule } from '@angular/common';
 })
 export class CountryStatusModalComponent {
   @Input() country: Country | null = null;
-  @Output() statusSelected = new EventEmitter<{ country: Country, status: string }>();
+  @Output() statusSelected = new EventEmitter<{ country: Country, status: CountryStatus }>();
   @Output() closeModal = new EventEmitter<void>();
 
-  selectStatus(status: string): void {
+  selectStatus(status: CountryStatus): void {
     if (this.country) {
       this.statusSelected.emit({ country: this.country, status });
     }

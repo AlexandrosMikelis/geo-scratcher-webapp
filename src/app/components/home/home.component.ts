@@ -1,8 +1,10 @@
-import { Component, HostListener, ElementRef, AfterViewInit } from '@angular/core';
-import { Country } from '../../interfaces/country';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Country } from '../../interfaces/country';
 import { COUNTRIES_DATA } from './countriesData';
 import { CountryStatusModalComponent } from '../country-status-modal/country-status-modal.component';
+
+type CountryStatus = 'visited' | 'lived' | 'future';
 
 @Component({
   selector: 'app-home',
@@ -11,216 +13,232 @@ import { CountryStatusModalComponent } from '../country-status-modal/country-sta
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements AfterViewInit {
+export class HomeComponent implements AfterViewInit, OnDestroy {
+  readonly countries: Country[] = COUNTRIES_DATA;
+  readonly mapWidth = 1211.60724;
+  readonly mapHeight = 799.155612;
+  readonly copies = [-1, 0, 1];
 
-  countries: Country[];
-
-  scale: number = 1;
-  initialScale: number = 1;
-  xOffset: number = 0;
-  yOffset: number = 0;
-  originX: number = 0;
-  originY: number = 0;
-
-  dragging: boolean = false;
-  isDragging: boolean = false; // Flag to track dragging state
-  lastX: number = 0;
-  lastY: number = 0;
-  containerWidth: number = 0;
-  containerHeight: number = 0;
+  scale = 1.12;
+  xOffset = 0;
+  yOffset = 0;
+  isDragging = false;
+  autoSpin = true;
 
   selectedCountry: Country | null = null;
-  showModal: boolean = false;
+  hoveredCountry: Country | null = null;
+  showModal = false;
+  tooltip = { x: 0, y: 0 };
 
-  countryToggled: boolean = false;
+  private pointerDown = false;
+  private lastX = 0;
+  private lastY = 0;
+  private spinTimer?: number;
 
-  constructor(private elementRef: ElementRef) {
-    this.countries = COUNTRIES_DATA;
-  }
+  constructor(
+    private elementRef: ElementRef<HTMLElement>,
+    private ngZone: NgZone,
+    private changeDetector: ChangeDetectorRef
+  ) {}
 
   ngAfterViewInit(): void {
-    this.setInitialView();
+    this.resetView();
+    this.startAutoSpin();
   }
 
-  setInitialView(): void {
-    const container = this.elementRef.nativeElement.querySelector('.scratch-map');
-    const svg = container.querySelector('svg');
-    if (!svg) return;
-
-    this.containerWidth = container.offsetWidth + 800;
-    this.containerHeight = container.offsetHeight + 300;
-
-    const svgWidth = svg.width.baseVal.value;
-    const svgHeight = svg.height.baseVal.value;
-
-    // Calculate maximum zoom-out scale where the entire SVG fits within the container
-    const scaleX = this.containerWidth / svgWidth;
-    const scaleY = this.containerHeight / svgHeight;
-    this.initialScale = Math.min(scaleX, scaleY);
-
-    this.scale = this.initialScale;
-    this.xOffset = (this.containerWidth - (svgWidth * this.scale)) / 2 / this.scale;
-    this.yOffset = (this.containerHeight - (svgHeight * this.scale)) / 2 / this.scale;
+  ngOnDestroy(): void {
+    this.stopAutoSpin();
   }
 
-  @HostListener('wheel', ['$event'])
+  get mapTransform(): string {
+    return `translate(${this.xOffset} ${this.yOffset}) scale(${this.scale})`;
+  }
+
+  get visitedCount(): number {
+    return this.countries.filter((country) => country.visited).length;
+  }
+
+  get livedCount(): number {
+    return this.countries.filter((country) => country.lived).length;
+  }
+
+  get futureCount(): number {
+    return this.countries.filter((country) => country.future).length;
+  }
+
+  get exploredCount(): number {
+    return this.visitedCount + this.livedCount;
+  }
+
+  get progressPercent(): number {
+    return Math.round((this.exploredCount / this.countries.length) * 100);
+  }
+
   onWheelScroll(event: WheelEvent): void {
     event.preventDefault();
-    const scaleAmount = -event.deltaY * 0.001;
-    const newScale = this.scale + scaleAmount;
+    this.stopAutoSpin();
 
-    // Limiting zoom levels
-    if (newScale > this.initialScale) {
-      const mouseX = event.clientX - this.xOffset;
-      const mouseY = event.clientY - this.yOffset;
-
-      this.xOffset = event.clientX - mouseX * (newScale / this.scale);
-      this.yOffset = event.clientY - mouseY * (newScale / this.scale);
-
-      this.scale = newScale;
-    } else {
-      this.scale = this.initialScale;
-      this.xOffset = 300;
-      this.yOffset = 0;
-    }
+    const nextScale = this.scale + (-event.deltaY * 0.0012);
+    this.scale = Math.max(0.9, Math.min(2.8, nextScale));
+    this.yOffset = this.clamp(this.yOffset, -180, 150);
   }
 
-  @HostListener('mousedown', ['$event'])
-  onMouseDown(event: MouseEvent): void {
-    this.dragging = true;
+  onPointerDown(event: PointerEvent): void {
+    this.stopAutoSpin();
+    this.pointerDown = true;
+    this.isDragging = false;
     this.lastX = event.clientX;
     this.lastY = event.clientY;
   }
 
-  @HostListener('mousemove', ['$event'])
-  onMouseMove(event: MouseEvent): void {
-    if (this.dragging) {
-      this.isDragging = true; // Set dragging state to true
-      const dx = event.clientX - this.lastX;
-      const dy = event.clientY - this.lastY;
-
-      // Limit dragging within container bounds
-      const newXOffset = this.xOffset + dx;
-      const newYOffset = this.yOffset + dy;
-
-      // Calculate maximum allowable offsets
-      const maxOffsetX = (this.containerWidth - (this.containerWidth / this.scale)) / 2;
-      const maxOffsetY = (this.containerHeight - (this.containerHeight / this.scale)) / 2;
-
-      // Apply limits
-      this.xOffset = Math.max(-maxOffsetX + 600, Math.min(maxOffsetX, newXOffset));
-      this.yOffset = Math.max(-maxOffsetY, Math.min(maxOffsetY, newYOffset));
-
-      this.lastX = event.clientX;
-      this.lastY = event.clientY;
+  onPointerMove(event: PointerEvent): void {
+    if (!this.pointerDown) {
+      return;
     }
+
+    const dx = event.clientX - this.lastX;
+    const dy = event.clientY - this.lastY;
+    if (!this.isDragging && Math.hypot(dx, dy) < 4) {
+      return;
+    }
+
+    this.isDragging = true;
+    this.xOffset = this.wrapOffset(this.xOffset + dx / this.scale);
+    this.yOffset = this.clamp(this.yOffset + dy / this.scale, -180, 150);
+    this.lastX = event.clientX;
+    this.lastY = event.clientY;
+    this.moveTooltip(event);
   }
 
-  @HostListener('mouseup', ['$event'])
-  onMouseUp(event: MouseEvent): void {
-    this.dragging = false;
-    this.isDragging = false; // Reset dragging state to false on mouse up
+  onPointerUp(event: PointerEvent): void {
+    this.pointerDown = false;
+    this.isDragging = false;
   }
 
-  onMouseEnter(event: MouseEvent): void {
-    // Handle mouse enter event if needed
+  onCountryEnter(country: Country, event: MouseEvent): void {
+    this.hoveredCountry = country;
+    this.moveTooltip(event);
   }
 
-  @HostListener('mouseleave', ['$event'])
-  onMouseLeave(event: MouseEvent): void {
-    this.dragging = false;
-    this.isDragging = false; // Reset dragging state to false on mouse leave
+  onCountryMove(event: MouseEvent): void {
+    this.moveTooltip(event);
   }
 
-  onCountryMouseEnter(countryId: string): void {
-    // Handle mouse enter on a specific country
+  onCountryLeave(): void {
+    this.hoveredCountry = null;
   }
 
-  onCountryMouseLeave(countryId: string): void {
-    // Handle mouse leave on a specific country
-  }
-
-  onCountryClick(event: MouseEvent): void {
+  openCountryStatus(country: Country): void {
     if (this.isDragging) {
-      event.stopPropagation(); // Prevent click event propagation if dragging
-    } else if (event.detail === 2){
-      const target = event.target as SVGElement;
-      const countryId = target.closest('g')?.id;
-      const country = this.countries.find(c => c.id === countryId);
-      if (country) {
-        // this.toggleCountryVisited(country);
-        console.log('Country clicked:', country.title);
-      }
+      return;
     }
+
+    this.selectedCountry = country;
+    this.showModal = true;
   }
 
-  toggleContryStatusModal(country: Country): void {
-    if(!this.countryToggled){
-      this.selectedCountry = country;
-      this.countryToggled = !this.countryToggled
+  setCountryStatus(country: Country, status: string): void {
+    if (!this.isCountryStatus(status)) {
+      return;
     }
-    else{
-      this.countryToggled = !this.countryToggled
-    }
-    // country.visited = !country.visited;
-    this.showModal = this.countryToggled;
-  }
 
-  calculateTextPositionX(country: Country): number {
-    const path = document.getElementById(country.id);
-    if (!(path instanceof SVGPathElement)) return 0;
-
-    const bbox = path.getBBox();
-    return bbox.x + bbox.width / 2;
-  }
-
-  calculateTextPositionY(country: Country): number {
-    const path = document.getElementById(country.id);
-    if (!(path instanceof SVGPathElement)) return 0;
-
-    const bbox = path.getBBox();
-    return bbox.y + bbox.height / 2;
-  }
-
-  calculatePathLength(country: Country): any {
-    return this.countries.find(obj => obj.id === country.id)?.d.length;
-  }
-
-  calculateFontSize(country: Country): number {
-    const pathLength = this.calculatePathLength(country);
-    return Math.max(4, Math.min(8, pathLength / 5)); // Adjust scaling factor as needed
-  }
-
-  onStatusSelected(event: { country: Country, status: string }): void {
-    switch (event.status) {
-      case 'visited':
-        event.country.visited = !event.country.visited;
-        if (event.country.visited) {
-          event.country.lived = false;
-          event.country.future = false;
-        }
-        break;
-      case 'lived':
-        event.country.lived = !event.country.lived; // You can add more properties as needed
-        if (event.country.lived) {
-          event.country.visited = false;
-          event.country.future = false;
-        }
-        break;
-      case 'future':
-        event.country.future = !event.country.future; // You can add more properties as needed
-        if (event.country.future) {
-          event.country.visited = false;
-          event.country.lived = false;
-        }
-        break;
-    }
-    this.countryToggled = !this.countryToggled
+    country.visited = status === 'visited' ? !country.visited : false;
+    country.lived = status === 'lived' ? !country.lived : false;
+    country.future = status === 'future' ? !country.future : false;
     this.showModal = false;
   }
 
   closeModal(): void {
-    this.countryToggled = !this.countryToggled
     this.showModal = false;
+  }
+
+  zoomIn(): void {
+    this.stopAutoSpin();
+    this.scale = Math.min(2.8, this.scale + 0.18);
+  }
+
+  zoomOut(): void {
+    this.stopAutoSpin();
+    this.scale = Math.max(0.9, this.scale - 0.18);
+  }
+
+  resetView(): void {
+    this.scale = 1.12;
+    this.xOffset = 0;
+    this.yOffset = 0;
+  }
+
+  toggleAutoSpin(): void {
+    if (this.autoSpin) {
+      this.stopAutoSpin();
+    } else {
+      this.autoSpin = true;
+      this.startAutoSpin();
+    }
+  }
+
+  countryStatus(country: Country): string {
+    if (country.lived) {
+      return 'Lived in';
+    }
+    if (country.visited) {
+      return 'Visited';
+    }
+    if (country.future) {
+      return 'Future travel';
+    }
+    return 'Unmarked';
+  }
+
+  private startAutoSpin(): void {
+    this.stopAutoSpin(false);
+    if (!this.autoSpin) {
+      return;
+    }
+
+    this.ngZone.runOutsideAngular(() => {
+      this.spinTimer = window.setInterval(() => {
+        if (!this.isDragging && !this.showModal) {
+          this.xOffset = this.wrapOffset(this.xOffset - 0.75);
+          this.changeDetector.detectChanges();
+        }
+      }, 32);
+    });
+  }
+
+  private stopAutoSpin(updateState = true): void {
+    if (this.spinTimer) {
+      window.clearInterval(this.spinTimer);
+      this.spinTimer = undefined;
+    }
+    if (updateState) {
+      this.autoSpin = false;
+    }
+  }
+
+  private moveTooltip(event: MouseEvent | PointerEvent): void {
+    const host = this.elementRef.nativeElement.getBoundingClientRect();
+    this.tooltip = {
+      x: event.clientX - host.left + 14,
+      y: event.clientY - host.top + 14
+    };
+  }
+
+  private wrapOffset(value: number): number {
+    if (value > this.mapWidth) {
+      return value - this.mapWidth;
+    }
+    if (value < -this.mapWidth) {
+      return value + this.mapWidth;
+    }
+    return value;
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  private isCountryStatus(status: string): status is CountryStatus {
+    return status === 'visited' || status === 'lived' || status === 'future';
   }
 }

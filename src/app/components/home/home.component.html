@@ -1,48 +1,101 @@
-<div class="scratch-map">
-    <svg
-      xmlns:mapsvg="http://mapsvg.com"
-      xmlns:dc="http://purl.org/dc/elements/1.1/"
-      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-      xmlns:svg="http://www.w3.org/2000/svg"
-      xmlns="http://www.w3.org/2000/svg"
-      mapsvg:geoViewBox="-169.110266 83.600842 190.486279 -58.508473"
-      [attr.width]="1211.60724"
-      [attr.height]="799.155612"
-      (mouseenter)="onMouseEnter($event)"
-      (mouseleave)="onMouseLeave($event)"
-      (click)="onCountryClick($event)"
-      [attr.transform]="'translate(' + xOffset + ', ' + yOffset + ') scale(' + scale + ')'"
-    >
-      <g *ngFor="let country of countries">
-        <path
-          [attr.d]="country.d"
-          [attr.title]="country.title"
-          [attr.id]="country.id"
-          class="country"
-          [ngClass]="{ 'visited': country.visited, 'lived': country.lived, 'future': country.future }"
-          (dblclick)="toggleContryStatusModal(country)"
-        ></path>
-        <!-- <text
-          [attr.x]="calculateTextPositionX(country)"
-          [attr.y]="calculateTextPositionY(country)"
-          [attr.fill]="country.visited ? '#fff' : '#000'"
-          [attr.font-size]="calculateFontSize(country)"
-          text-anchor="middle"
-          alignment-baseline="middle"
-          (mouseenter)="onCountryMouseEnter(country.id)"
-          (mouseleave)="onCountryMouseLeave(country.id)"
-          (dblclick)="toggleCountryVisited(country)"
-          style="cursor: pointer;"
-        >
-          {{ country.title }}
-        </text> -->
-      </g>
-    </svg>
-  </div>
+<main class="globe-page">
+  <header class="top-bar">
+    <div class="brand">
+      <span class="brand-mark">GS</span>
+      <div>
+        <h1>Geo Scratcher</h1>
+        <p>Spin the globe, zoom in, and double-click a country to mark it.</p>
+      </div>
+    </div>
 
-  <app-country-status-modal
+    <div class="map-actions" aria-label="Globe controls">
+      <button type="button" (click)="zoomOut()" aria-label="Zoom out">-</button>
+      <button type="button" (click)="resetView()">Reset</button>
+      <button type="button" (click)="zoomIn()" aria-label="Zoom in">+</button>
+      <button type="button" [class.active]="autoSpin" (click)="toggleAutoSpin()">
+        {{ autoSpin ? 'Spinning' : 'Spin' }}
+      </button>
+    </div>
+  </header>
+
+  <section class="content-grid">
+    <aside class="stats-panel">
+      <p class="eyebrow">Travel progress</p>
+      <strong>{{ progressPercent }}%</strong>
+      <span>{{ exploredCount }} of {{ countries.length }} countries explored</span>
+
+      <div class="progress-track" aria-label="Exploration progress">
+        <span [style.width.%]="progressPercent"></span>
+      </div>
+
+      <div class="legend">
+        <div><span class="dot visited"></span>Visited <b>{{ visitedCount }}</b></div>
+        <div><span class="dot lived"></span>Lived in <b>{{ livedCount }}</b></div>
+        <div><span class="dot future"></span>Future <b>{{ futureCount }}</b></div>
+        <div><span class="dot open"></span>Open</div>
+      </div>
+    </aside>
+
+    <section class="globe-stage" aria-label="Interactive country globe">
+      <div
+        class="globe-shell"
+        [class.dragging]="isDragging"
+        (wheel)="onWheelScroll($event)"
+        (pointerdown)="onPointerDown($event)"
+        (pointermove)="onPointerMove($event)"
+        (pointerup)="onPointerUp($event)"
+        (pointercancel)="onPointerUp($event)"
+      >
+        <div class="ocean-light"></div>
+        <div class="graticule"></div>
+        <svg
+          class="globe-map"
+          xmlns="http://www.w3.org/2000/svg"
+          [attr.viewBox]="'0 0 ' + mapWidth + ' ' + mapHeight"
+          preserveAspectRatio="xMidYMid meet"
+          aria-hidden="true"
+        >
+          <g [attr.transform]="mapTransform">
+            <g *ngFor="let copy of copies" [attr.transform]="'translate(' + (copy * mapWidth) + ' 0)'">
+              <path
+                *ngFor="let country of countries"
+                [attr.d]="country.d"
+                [attr.title]="country.title"
+                class="country"
+                [ngClass]="{ visited: country.visited, lived: country.lived, future: country.future }"
+                (mouseenter)="onCountryEnter(country, $event)"
+                (mousemove)="onCountryMove($event)"
+                (mouseleave)="onCountryLeave()"
+                (dblclick)="openCountryStatus(country)"
+              ></path>
+            </g>
+          </g>
+        </svg>
+        <div class="globe-shine"></div>
+      </div>
+
+      <div class="hint-strip">
+        <span>Drag to rotate</span>
+        <span>Scroll to zoom</span>
+        <span>Double-click to mark</span>
+      </div>
+    </section>
+  </section>
+
+  <div
+    *ngIf="hoveredCountry"
+    class="country-tooltip"
+    [style.left.px]="tooltip.x"
+    [style.top.px]="tooltip.y"
+  >
+    <strong>{{ hoveredCountry.title }}</strong>
+    <span>{{ countryStatus(hoveredCountry) }}</span>
+  </div>
+</main>
+
+<app-country-status-modal
   *ngIf="showModal"
   [country]="selectedCountry"
-  (statusSelected)="onStatusSelected($event)"
+  (statusSelected)="setCountryStatus($event.country, $event.status)"
   (closeModal)="closeModal()"
 ></app-country-status-modal>
