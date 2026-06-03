@@ -1,85 +1,41 @@
-<main class="globe-page">
-  <header class="top-bar">
-    <div class="brand">
-      <span class="brand-mark">GS</span>
-      <div>
-        <h1>Geo Scratcher</h1>
-        <p>Spin the globe, zoom in, and double-click a country to mark it.</p>
-      </div>
-    </div>
-
-    <div class="map-actions" aria-label="Globe controls">
-      <button type="button" (click)="zoomOut()" aria-label="Zoom out">-</button>
-      <button type="button" (click)="resetView()">Reset</button>
-      <button type="button" (click)="zoomIn()" aria-label="Zoom in">+</button>
-      <button type="button" [class.active]="autoSpin" (click)="toggleAutoSpin()">
-        {{ autoSpin ? 'Spinning' : 'Spin' }}
-      </button>
-    </div>
-  </header>
-
-  <section class="content-grid">
-    <aside class="stats-panel">
-      <p class="eyebrow">Travel progress</p>
-      <strong>{{ progressPercent }}%</strong>
-      <span>{{ exploredCount }} of {{ countries.length }} countries explored</span>
-
-      <div class="progress-track" aria-label="Exploration progress">
-        <span [style.width.%]="progressPercent"></span>
-      </div>
-
-      <div class="legend">
-        <div><span class="dot visited"></span>Visited <b>{{ visitedCount }}</b></div>
-        <div><span class="dot lived"></span>Lived in <b>{{ livedCount }}</b></div>
-        <div><span class="dot future"></span>Future <b>{{ futureCount }}</b></div>
-        <div><span class="dot open"></span>Open</div>
-      </div>
-    </aside>
-
-    <section class="globe-stage" aria-label="Interactive country globe">
-      <div
-        class="globe-shell"
-        [class.dragging]="isDragging"
-        (wheel)="onWheelScroll($event)"
-        (pointerdown)="onPointerDown($event)"
-        (pointermove)="onPointerMove($event)"
-        (pointerup)="onPointerUp($event)"
-        (pointercancel)="onPointerUp($event)"
+<main class="maps-page">
+  <section
+    class="map-canvas"
+    aria-label="Interactive Apple Maps inspired country globe"
+    (wheel)="onWheelScroll($event)"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointercancel)="onPointerUp($event)"
+  >
+    <div class="space-field" aria-hidden="true"></div>
+    <div class="map-shell" [class.dragging]="isDragging">
+      <div class="terrain-wash" aria-hidden="true"></div>
+      <svg
+        class="world-map"
+        xmlns="http://www.w3.org/2000/svg"
+        [attr.viewBox]="'0 0 ' + mapWidth + ' ' + mapHeight"
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
       >
-        <div class="ocean-light"></div>
-        <div class="graticule"></div>
-        <svg
-          class="globe-map"
-          xmlns="http://www.w3.org/2000/svg"
-          [attr.viewBox]="'0 0 ' + mapWidth + ' ' + mapHeight"
-          preserveAspectRatio="xMidYMid meet"
-          aria-hidden="true"
-        >
-          <g [attr.transform]="mapTransform">
-            <g *ngFor="let copy of copies" [attr.transform]="'translate(' + (copy * mapWidth) + ' 0)'">
-              <path
-                *ngFor="let country of countries"
-                [attr.d]="country.d"
-                [attr.title]="country.title"
-                class="country"
-                [ngClass]="{ visited: country.visited, lived: country.lived, future: country.future }"
-                (mouseenter)="onCountryEnter(country, $event)"
-                (mousemove)="onCountryMove($event)"
-                (mouseleave)="onCountryLeave()"
-                (dblclick)="openCountryStatus(country)"
-              ></path>
-            </g>
+        <g [attr.transform]="mapTransform">
+          <g *ngFor="let copy of copies" [attr.transform]="'translate(' + (copy * mapWidth) + ' 0)'">
+            <path
+              *ngFor="let country of countries"
+              [attr.d]="country.d"
+              [attr.title]="country.title"
+              class="country"
+              [ngClass]="{ visited: country.visited, lived: country.lived, future: country.future }"
+              (mouseenter)="onCountryEnter(country, $event)"
+              (mousemove)="onCountryMove($event)"
+              (mouseleave)="onCountryLeave()"
+              (dblclick)="openCountryStatus(country)"
+            ></path>
           </g>
-        </svg>
-        <div class="globe-shine"></div>
-      </div>
-
-      <div class="hint-strip">
-        <span>Drag to rotate</span>
-        <span>Scroll to zoom</span>
-        <span>Double-click to mark</span>
-      </div>
-    </section>
+        </g>
+      </svg>
+      <div class="globe-atmosphere" aria-hidden="true"></div>
+    </div>
   </section>
 
   <div
