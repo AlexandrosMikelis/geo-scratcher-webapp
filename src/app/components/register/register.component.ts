@@ -38,7 +38,9 @@ export class RegisterComponent {
     this.authService.register(email, username, password).subscribe({
       next: () => this.router.navigate(['/home']),
       error: (response) => {
-        this.error = response.error?.detail ?? 'Registration failed';
+        this.error = response.status === 0
+          ? 'API server is unavailable. Start it with npm run start:api.'
+          : response.error?.detail ?? 'Registration failed';
         this.isSubmitting = false;
       },
       complete: () => {

@@ -50,7 +50,9 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: () => this.router.navigate(['/home']),
       error: (response) => {
-        this.error = response.error?.detail ?? 'Login failed';
+        this.error = response.status === 0
+          ? 'API server is unavailable. Start it with npm run start:api.'
+          : response.error?.detail ?? 'Login failed';
         this.isSubmitting = false;
       },
       complete: () => {

@@ -4,6 +4,7 @@
   "tasks": [
     {
       "type": "npm",
+      "label": "npm: start",
       "script": "start",
       "isBackground": true,
       "problemMatcher": {
@@ -22,6 +23,37 @@
     },
     {
       "type": "npm",
+      "label": "npm: start:api",
+      "script": "start:api",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "python",
+        "pattern": [
+          {
+            "regexp": "^(.*)$",
+            "message": 1
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "Uvicorn running on"
+          },
+          "endsPattern": {
+            "regexp": "Uvicorn running on"
+          }
+        }
+      }
+    },
+    {
+      "label": "start full stack",
+      "dependsOn": ["npm: start:api", "npm: start"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "type": "npm",
+      "label": "npm: test",
       "script": "test",
       "isBackground": true,
       "problemMatcher": {

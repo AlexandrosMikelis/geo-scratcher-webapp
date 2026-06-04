@@ -4,7 +4,21 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Development server
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+Login, registration, and saved country statuses require the FastAPI server in the sibling `../geo-scratcher-server` directory.
+
+Run the API server:
+
+```powershell
+npm run start:api
+```
+
+In another terminal, run the Angular dev server:
+
+```powershell
+npm start
+```
+
+Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
 
 ## Code scaffolding
 

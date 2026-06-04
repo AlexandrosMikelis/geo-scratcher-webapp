@@ -6,7 +6,7 @@
       "name": "ng serve",
       "type": "chrome",
       "request": "launch",
-      "preLaunchTask": "npm: start",
+      "preLaunchTask": "start full stack",
       "url": "http://localhost:4200/"
     },
     {
