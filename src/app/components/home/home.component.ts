@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
@@ -15,6 +15,8 @@ import { AuthService, CountryStatus } from '../../services/auth.service';
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('worldMap') private worldMap?: ElementRef<SVGSVGElement>;
+
   readonly countries: Country[] = COUNTRIES_DATA.map((country) => ({ ...country }));
   readonly mapWidth = 1211.60724;
   readonly mapHeight = 799.155612;
@@ -92,9 +94,8 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     event.preventDefault();
     this.stopAutoSpin();
 
-    const nextScale = this.scale + (-event.deltaY * 0.0012);
-    this.scale = Math.max(0.9, Math.min(2.8, nextScale));
-    this.yOffset = this.clamp(this.yOffset, -180, 150);
+    const zoomFactor = Math.exp(-event.deltaY * 0.0012);
+    this.zoomAt(event.clientX, event.clientY, this.scale * zoomFactor);
   }
 
   onPointerDown(event: PointerEvent): void {
@@ -189,12 +190,12 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
 
   zoomIn(): void {
     this.stopAutoSpin();
-    this.scale = Math.min(2.8, this.scale + 0.18);
+    this.zoomAtCenter(this.scale + 0.18);
   }
 
   zoomOut(): void {
     this.stopAutoSpin();
-    this.scale = Math.max(0.9, this.scale - 0.18);
+    this.zoomAtCenter(this.scale - 0.18);
   }
 
   resetView(): void {
@@ -313,6 +314,50 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
       x: event.clientX - host.left + 14,
       y: event.clientY - host.top + 14
     };
+  }
+
+  private zoomAtCenter(nextScale: number): void {
+    const mapElement = this.worldMap?.nativeElement;
+    if (!mapElement) {
+      this.scale = this.clamp(nextScale, 0.9, 2.8);
+      return;
+    }
+
+    const rect = mapElement.getBoundingClientRect();
+    this.zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, nextScale);
+  }
+
+  private zoomAt(clientX: number, clientY: number, nextScale: number): void {
+    const mapElement = this.worldMap?.nativeElement;
+    const oldScale = this.scale;
+    const newScale = this.clamp(nextScale, 0.9, 2.8);
+
+    if (!mapElement || newScale === oldScale) {
+      this.scale = newScale;
+      return;
+    }
+
+    const svgPoint = this.pointerToSvgPoint(mapElement, clientX, clientY);
+    if (!svgPoint) {
+      this.scale = newScale;
+      return;
+    }
+
+    const focusX = (svgPoint.x - this.xOffset) / oldScale;
+    const focusY = (svgPoint.y - this.yOffset) / oldScale;
+
+    this.scale = newScale;
+    this.xOffset = this.wrapOffset(svgPoint.x - focusX * newScale);
+    this.yOffset = this.clamp(svgPoint.y - focusY * newScale, -180, 150);
+  }
+
+  private pointerToSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number): DOMPoint | null {
+    const screenMatrix = svg.getScreenCTM();
+    if (!screenMatrix) {
+      return null;
+    }
+
+    return new DOMPoint(clientX, clientY).matrixTransform(screenMatrix.inverse());
   }
 
   private wrapOffset(value: number): number {

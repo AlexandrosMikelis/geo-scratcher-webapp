@@ -12,6 +12,7 @@
     <div class="map-shell" [class.dragging]="isDragging">
       <div class="terrain-wash" aria-hidden="true"></div>
       <svg
+        #worldMap
         class="world-map"
         xmlns="http://www.w3.org/2000/svg"
         [attr.viewBox]="'0 0 ' + mapWidth + ' ' + mapHeight"
