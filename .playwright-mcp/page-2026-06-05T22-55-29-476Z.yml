@@ -1,0 +1,41 @@
+- generic [ref=e4]:
+  - generic [ref=e11]:
+    - img [ref=e12]
+    - textbox "Search countries or cities…" [ref=e15]
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e18]: Theme
+      - generic [ref=e19]:
+        - button "Realistic" [ref=e20] [cursor=pointer]
+        - button "Playful" [ref=e21] [cursor=pointer]
+        - button "Cartoon" [ref=e22] [cursor=pointer]
+    - generic [ref=e23]:
+      - generic [ref=e24]: Map
+      - generic [ref=e25]:
+        - button "Satellite" [ref=e26] [cursor=pointer]
+        - button "Night" [ref=e27] [cursor=pointer]
+        - button "Vector" [ref=e28] [cursor=pointer]
+  - generic [ref=e29]:
+    - generic [ref=e31]: Your travels
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]: "0"
+        - generic [ref=e35]: scratched
+      - generic [ref=e36]:
+        - generic [ref=e37]: 0%
+        - generic [ref=e38]: of the world
+    - paragraph [ref=e40]: The world starts under coating. Click any country to scratch it off and reveal the earth beneath.
+  - generic [ref=e41]:
+    - generic [ref=e42]:
+      - button "Zoom in" [ref=e43] [cursor=pointer]:
+        - img [ref=e44]
+      - button "Zoom out" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+    - generic [ref=e51]:
+      - button "Reset view" [ref=e52] [cursor=pointer]:
+        - img [ref=e53]
+      - button "Auto-spin" [ref=e56] [cursor=pointer]:
+        - img [ref=e57]
+      - button "Day / night shading" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+  - generic: DRAG to rotate · SCROLL to zoom · CLICK a country to scratch

@@ -1,0 +1,7 @@
+[     555ms] [LOG] Angular is running in development mode. @ http://localhost:4201/@fs/Users/alexandrosmikelis/Work/MIKA/geo-scratcher-webapp/.angular/cache/18.1.0/vite/deps/chunk-3EULP4PP.js?v=ba1ee164:19273
+[     584ms] [LOG] Angular hydrated 3 component(s) and 108 node(s), 0 component(s) were skipped. Learn more at https://angular.dev/guide/hydration. @ http://localhost:4201/@fs/Users/alexandrosmikelis/Work/MIKA/geo-scratcher-webapp/.angular/cache/18.1.0/vite/deps/chunk-3EULP4PP.js?v=ba1ee164:19273
+[   19022ms] [ERROR] Access to XMLHttpRequest at 'http://127.0.0.1:8000/auth/login' from origin 'http://localhost:4201' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:4201/login:0
+[   19024ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://127.0.0.1:8000/auth/login:0
+[   50587ms] [WARNING] WebGL: CONTEXT_LOST_WEBGL: loseContext: context lost @ http://localhost:4201/login:0
+[   50593ms] [LOG] THREE.WebGLRenderer: Context Lost. @ http://localhost:4201/@fs/Users/alexandrosmikelis/Work/MIKA/geo-scratcher-webapp/.angular/cache/18.1.0/vite/deps/globe__gl.js?v=ba1ee164:400
+[   51597ms] [LOG] THREE.WebGLRenderer: Context Restored. @ http://localhost:4201/@fs/Users/alexandrosmikelis/Work/MIKA/geo-scratcher-webapp/.angular/cache/18.1.0/vite/deps/globe__gl.js?v=ba1ee164:400

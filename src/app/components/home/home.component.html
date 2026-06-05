@@ -1,54 +1,8 @@
-<main class="maps-page">
-  <section
-    class="map-canvas"
-    aria-label="Interactive Apple Maps inspired country globe"
-    (wheel)="onWheelScroll($event)"
-    (pointerdown)="onPointerDown($event)"
-    (pointermove)="onPointerMove($event)"
-    (pointerup)="onPointerUp($event)"
-    (pointercancel)="onPointerUp($event)"
-  >
-    <div class="space-field" aria-hidden="true"></div>
-    <div class="map-shell" [class.dragging]="isDragging">
-      <div class="terrain-wash" aria-hidden="true"></div>
-      <svg
-        #worldMap
-        class="world-map"
-        xmlns="http://www.w3.org/2000/svg"
-        [attr.viewBox]="'0 0 ' + mapWidth + ' ' + mapHeight"
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden="true"
-      >
-        <g [attr.transform]="mapTransform">
-          <g *ngFor="let copy of copies" [attr.transform]="'translate(' + (copy * mapWidth) + ' 0)'">
-            <path
-              *ngFor="let country of countries"
-              [attr.d]="country.d"
-              [attr.title]="country.title"
-              class="country"
-              [ngClass]="{ visited: country.visited, lived: country.lived, future: country.future }"
-              (mouseenter)="onCountryEnter(country, $event)"
-              (mousemove)="onCountryMove($event)"
-              (mouseleave)="onCountryLeave()"
-              (dblclick)="openCountryStatus(country)"
-            ></path>
-          </g>
-        </g>
-      </svg>
-      <div class="globe-atmosphere" aria-hidden="true"></div>
-    </div>
-  </section>
-
-  <div
-    *ngIf="hoveredCountry"
-    class="country-tooltip"
-    [style.left.px]="tooltip.x"
-    [style.top.px]="tooltip.y"
-  >
-    <strong>{{ hoveredCountry.title }}</strong>
-    <span>{{ countryStatus(hoveredCountry) }}</span>
-  </div>
-</main>
+<app-globe-explorer
+  class="globe-host"
+  [visited]="visitedIds"
+  (countrySelected)="onCountrySelected($event)"
+></app-globe-explorer>
 
 <app-country-status-modal
   *ngIf="showModal"
@@ -56,3 +10,7 @@
   (statusSelected)="setCountryStatus($event.country, $event.status)"
   (closeModal)="closeModal()"
 ></app-country-status-modal>
+
+@if (saveMessage) {
+  <div class="save-toast">{{ saveMessage }}</div>
+}

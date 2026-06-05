@@ -1,54 +1,33 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { Component, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { Country } from '../../interfaces/country';
-import { COUNTRIES_DATA } from './countriesData';
+import { GlobeExplorerComponent } from '../globe-explorer/globe-explorer.component';
+import { CountryInfo } from '../globe-explorer/globe-explorer.types';
 import { CountryStatusModalComponent } from '../country-status-modal/country-status-modal.component';
 import { AuthService, CountryStatus } from '../../services/auth.service';
+import { Country } from '../../interfaces/country';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, CountryStatusModalComponent],
+  imports: [CommonModule, GlobeExplorerComponent, CountryStatusModalComponent],
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss']
+  styleUrls: ['./home.component.scss'],
 })
-export class HomeComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('worldMap') private worldMap?: ElementRef<SVGSVGElement>;
-
-  readonly countries: Country[] = COUNTRIES_DATA.map((country) => ({ ...country }));
-  readonly mapWidth = 1211.60724;
-  readonly mapHeight = 799.155612;
-  readonly copies = [-1, 0, 1];
-
-  scale = 1.12;
-  xOffset = 0;
-  yOffset = 0;
-  isDragging = false;
-  autoSpin = true;
+export class HomeComponent implements AfterViewInit {
+  visitedIds: string[] = [];
 
   selectedCountry: Country | null = null;
-  hoveredCountry: Country | null = null;
   showModal = false;
-  tooltip = { x: 0, y: 0 };
-  isLoadingStatuses = false;
   saveMessage = '';
+  isLoadingStatuses = false;
 
-  private pointerDown = false;
-  private activePointerId: number | null = null;
-  private lastX = 0;
-  private lastY = 0;
-  private spinFrame?: number;
-  private lastSpinTime = 0;
-  private spinRunId = 0;
+  private statusMap = new Map<string, CountryStatus>();
 
   constructor(
-    private elementRef: ElementRef<HTMLElement>,
-    private ngZone: NgZone,
-    private changeDetector: ChangeDetectorRef,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngAfterViewInit(): void {
@@ -56,320 +35,89 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
       this.router.navigate(['/login']);
       return;
     }
-
-    this.resetView();
     this.loadCountryStatuses();
-    this.startAutoSpin();
   }
 
-  ngOnDestroy(): void {
-    this.stopAutoSpin();
-  }
-
-  get mapTransform(): string {
-    return `translate(${this.xOffset} ${this.yOffset}) scale(${this.scale})`;
-  }
-
-  get visitedCount(): number {
-    return this.countries.filter((country) => country.visited).length;
-  }
-
-  get livedCount(): number {
-    return this.countries.filter((country) => country.lived).length;
-  }
-
-  get futureCount(): number {
-    return this.countries.filter((country) => country.future).length;
-  }
-
-  get exploredCount(): number {
-    return this.visitedCount + this.livedCount;
-  }
-
-  get progressPercent(): number {
-    return Math.round((this.exploredCount / this.countries.length) * 100);
-  }
-
-  onWheelScroll(event: WheelEvent): void {
-    event.preventDefault();
-    this.stopAutoSpin();
-
-    const zoomFactor = Math.exp(-event.deltaY * 0.0012);
-    this.zoomAt(event.clientX, event.clientY, this.scale * zoomFactor);
-  }
-
-  onPointerDown(event: PointerEvent): void {
-    this.stopAutoSpin();
-    this.pointerDown = true;
-    this.activePointerId = event.pointerId;
-    this.isDragging = false;
-    this.lastX = event.clientX;
-    this.lastY = event.clientY;
-  }
-
-  onPointerMove(event: PointerEvent): void {
-    if (!this.pointerDown || event.pointerId !== this.activePointerId) {
-      return;
-    }
-
-    const dx = event.clientX - this.lastX;
-    const dy = event.clientY - this.lastY;
-    if (!this.isDragging && Math.hypot(dx, dy) < 4) {
-      return;
-    }
-
-    this.isDragging = true;
-    this.xOffset = this.wrapOffset(this.xOffset + dx / this.scale);
-    this.yOffset = this.clamp(this.yOffset + dy / this.scale, -180, 150);
-    this.lastX = event.clientX;
-    this.lastY = event.clientY;
-    this.moveTooltip(event);
-  }
-
-  onPointerUp(event: PointerEvent): void {
-    if (event.pointerId !== this.activePointerId) {
-      return;
-    }
-    this.pointerDown = false;
-    this.activePointerId = null;
-    this.isDragging = false;
-  }
-
-  onCountryEnter(country: Country, event: MouseEvent): void {
-    this.hoveredCountry = country;
-    this.moveTooltip(event);
-  }
-
-  onCountryMove(event: MouseEvent): void {
-    this.moveTooltip(event);
-  }
-
-  onCountryLeave(): void {
-    this.hoveredCountry = null;
-  }
-
-  openCountryStatus(country: Country): void {
-    if (this.isDragging) {
-      return;
-    }
-
-    this.selectedCountry = country;
+  onCountrySelected(info: CountryInfo | null): void {
+    if (!info) return;
+    const currentStatus = this.statusMap.get(info.id) ?? null;
+    this.selectedCountry = {
+      id: info.id,
+      d: '',
+      title: info.name,
+      visited: currentStatus === 'visited',
+      lived: currentStatus === 'lived',
+      future: currentStatus === 'future',
+    };
     this.showModal = true;
   }
 
   setCountryStatus(country: Country, status: string): void {
-    if (!this.isCountryStatus(status)) {
-      return;
-    }
+    if (!this.isCountryStatus(status)) return;
 
-    const previousStatus = this.getCountryStatusValue(country);
-    const nextStatus = previousStatus === status ? null : status;
+    const prev = this.statusMap.get(country.id) ?? null;
+    const next: CountryStatus | null = prev === status ? null : status;
 
-    this.applyCountryStatus(country, nextStatus);
+    this.applyStatus(country.id, next);
+    this.rebuildVisitedIds();
     this.showModal = false;
-    this.saveMessage = 'Saving...';
+    this.saveMessage = 'Saving…';
 
-    const request: Observable<unknown> = nextStatus
-      ? this.authService.setCountryStatus(country.id, nextStatus)
+    const req: Observable<unknown> = next
+      ? this.authService.setCountryStatus(country.id, next)
       : this.authService.clearCountryStatus(country.id);
 
-    request.subscribe({
-      next: () => {
-        this.saveMessage = 'Saved';
-      },
+    req.subscribe({
+      next: () => { this.saveMessage = 'Saved'; setTimeout(() => (this.saveMessage = ''), 2000); },
       error: () => {
-        this.applyCountryStatus(country, previousStatus);
+        this.applyStatus(country.id, prev);
+        this.rebuildVisitedIds();
         this.saveMessage = 'Could not save. Please sign in again.';
-      }
+      },
     });
   }
 
   closeModal(): void {
     this.showModal = false;
-  }
-
-  zoomIn(): void {
-    this.stopAutoSpin();
-    this.zoomAtCenter(this.scale + 0.18);
-  }
-
-  zoomOut(): void {
-    this.stopAutoSpin();
-    this.zoomAtCenter(this.scale - 0.18);
-  }
-
-  resetView(): void {
-    this.scale = 1.12;
-    this.xOffset = 0;
-    this.yOffset = 0;
-  }
-
-  toggleAutoSpin(): void {
-    if (this.autoSpin) {
-      this.stopAutoSpin();
-    } else {
-      this.autoSpin = true;
-      this.startAutoSpin();
-    }
-  }
-
-  countryStatus(country: Country): string {
-    if (country.lived) {
-      return 'Lived in';
-    }
-    if (country.visited) {
-      return 'Visited';
-    }
-    if (country.future) {
-      return 'Future travel';
-    }
-    return 'Unmarked';
-  }
-
-  private startAutoSpin(): void {
-    this.stopAutoSpin(false);
-    if (!this.autoSpin) {
-      return;
-    }
-
-    const runId = ++this.spinRunId;
-    this.ngZone.runOutsideAngular(() => {
-      const spin = (time: number) => {
-        if (runId !== this.spinRunId || !this.autoSpin) {
-          return;
-        }
-
-        const elapsed = this.lastSpinTime ? time - this.lastSpinTime : 16.67;
-        this.lastSpinTime = time;
-
-        if (!this.isDragging && !this.showModal) {
-          this.xOffset = this.wrapOffset(this.xOffset - elapsed * 0.018);
-          this.changeDetector.detectChanges();
-        }
-
-        this.spinFrame = window.requestAnimationFrame(spin);
-      };
-
-      this.lastSpinTime = 0;
-      this.spinFrame = window.requestAnimationFrame(spin);
-    });
-  }
-
-  private stopAutoSpin(updateState = true): void {
-    this.spinRunId++;
-    if (this.spinFrame) {
-      window.cancelAnimationFrame(this.spinFrame);
-      this.spinFrame = undefined;
-    }
-    this.lastSpinTime = 0;
-    if (updateState) {
-      this.autoSpin = false;
-    }
+    // Re-sync globe to API state in case the globe internally scratched the country
+    this.visitedIds = [...this.visitedIds];
   }
 
   private loadCountryStatuses(): void {
     this.isLoadingStatuses = true;
     this.authService.getCountryStatuses().subscribe({
       next: (statuses) => {
-        this.countries.forEach((country) => this.applyCountryStatus(country, null));
-        statuses.forEach((countryStatus) => {
-          const country = this.countries.find((item) => item.id === countryStatus.country_id);
-          if (country) {
-            this.applyCountryStatus(country, countryStatus.status);
-          }
-        });
+        this.statusMap.clear();
+        statuses.forEach((s) => this.statusMap.set(s.country_id, s.status));
+        this.rebuildVisitedIds();
         this.isLoadingStatuses = false;
-        this.saveMessage = '';
       },
-      error: () => {
+      error: (err) => {
         this.isLoadingStatuses = false;
-        this.authService.logout();
-        this.router.navigate(['/login']);
-      }
+        if (err?.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login']);
+        }
+        // For other errors (API down, network issue) just show empty globe
+      },
     });
   }
 
-  private getCountryStatusValue(country: Country): CountryStatus | null {
-    if (country.visited) {
-      return 'visited';
+  private applyStatus(id: string, status: CountryStatus | null): void {
+    if (status) {
+      this.statusMap.set(id, status);
+    } else {
+      this.statusMap.delete(id);
     }
-    if (country.lived) {
-      return 'lived';
-    }
-    if (country.future) {
-      return 'future';
-    }
-    return null;
   }
 
-  private applyCountryStatus(country: Country, status: CountryStatus | null): void {
-    country.visited = status === 'visited';
-    country.lived = status === 'lived';
-    country.future = status === 'future';
+  private rebuildVisitedIds(): void {
+    this.visitedIds = [...this.statusMap.entries()]
+      .filter(([, s]) => s === 'visited' || s === 'lived')
+      .map(([id]) => id);
   }
 
-  private moveTooltip(event: MouseEvent | PointerEvent): void {
-    const host = this.elementRef.nativeElement.getBoundingClientRect();
-    this.tooltip = {
-      x: event.clientX - host.left + 14,
-      y: event.clientY - host.top + 14
-    };
-  }
-
-  private zoomAtCenter(nextScale: number): void {
-    const mapElement = this.worldMap?.nativeElement;
-    if (!mapElement) {
-      this.scale = this.clamp(nextScale, 0.9, 2.8);
-      return;
-    }
-
-    const rect = mapElement.getBoundingClientRect();
-    this.zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, nextScale);
-  }
-
-  private zoomAt(clientX: number, clientY: number, nextScale: number): void {
-    const mapElement = this.worldMap?.nativeElement;
-    const oldScale = this.scale;
-    const newScale = this.clamp(nextScale, 0.9, 2.8);
-
-    if (!mapElement || newScale === oldScale) {
-      this.scale = newScale;
-      return;
-    }
-
-    const svgPoint = this.pointerToSvgPoint(mapElement, clientX, clientY);
-    if (!svgPoint) {
-      this.scale = newScale;
-      return;
-    }
-
-    const focusX = (svgPoint.x - this.xOffset) / oldScale;
-    const focusY = (svgPoint.y - this.yOffset) / oldScale;
-
-    this.scale = newScale;
-    this.xOffset = this.wrapOffset(svgPoint.x - focusX * newScale);
-    this.yOffset = this.clamp(svgPoint.y - focusY * newScale, -180, 150);
-  }
-
-  private pointerToSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number): DOMPoint | null {
-    const screenMatrix = svg.getScreenCTM();
-    if (!screenMatrix) {
-      return null;
-    }
-
-    return new DOMPoint(clientX, clientY).matrixTransform(screenMatrix.inverse());
-  }
-
-  private wrapOffset(value: number): number {
-    const range = this.mapWidth * 2;
-    return ((((value + this.mapWidth) % range) + range) % range) - this.mapWidth;
-  }
-
-  private clamp(value: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, value));
-  }
-
-  private isCountryStatus(status: string): status is CountryStatus {
-    return status === 'visited' || status === 'lived' || status === 'future';
+  private isCountryStatus(s: string): s is CountryStatus {
+    return s === 'visited' || s === 'lived' || s === 'future';
   }
 }

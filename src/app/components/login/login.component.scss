@@ -1,117 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── background ── */
 .auth-page {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: linear-gradient(135deg, #068bd8, #136380);
+  background:
+    radial-gradient(ellipse 1400px 900px at 60% -5%, #0e1733 0%, #05070f 60%);
+  position: relative;
+  overflow: hidden;
 }
 
+/* static star-field via box-shadow trick */
+.auth-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12%  8%, rgba(255,255,255,.55) 0, transparent 0),
+    radial-gradient(1px 1px at 78% 14%, rgba(255,255,255,.45) 0, transparent 0),
+    radial-gradient(1px 1px at 34% 22%, rgba(255,255,255,.35) 0, transparent 0),
+    radial-gradient(1px 1px at 91%  3%, rgba(255,255,255,.60) 0, transparent 0),
+    radial-gradient(1px 1px at 55% 31%, rgba(255,255,255,.30) 0, transparent 0),
+    radial-gradient(1px 1px at  6% 47%, rgba(255,255,255,.40) 0, transparent 0),
+    radial-gradient(1px 1px at 67% 55%, rgba(255,255,255,.25) 0, transparent 0),
+    radial-gradient(1px 1px at 22% 63%, rgba(255,255,255,.50) 0, transparent 0),
+    radial-gradient(1px 1px at 84% 71%, rgba(255,255,255,.35) 0, transparent 0),
+    radial-gradient(1px 1px at 43% 82%, rgba(255,255,255,.45) 0, transparent 0),
+    radial-gradient(1px 1px at  3% 88%, rgba(255,255,255,.30) 0, transparent 0),
+    radial-gradient(1px 1px at 96% 92%, rgba(255,255,255,.55) 0, transparent 0),
+    radial-gradient(1.5px 1.5px at 30% 42%, rgba(255,255,255,.20) 0, transparent 0),
+    radial-gradient(1.5px 1.5px at 72%  6%, rgba(255,255,255,.18) 0, transparent 0),
+    radial-gradient(1.5px 1.5px at 18% 95%, rgba(255,255,255,.22) 0, transparent 0),
+    radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,.40) 0, transparent 0),
+    radial-gradient(1px 1px at 88% 40%, rgba(255,255,255,.28) 0, transparent 0),
+    radial-gradient(1px 1px at 15% 15%, rgba(255,255,255,.50) 0, transparent 0),
+    radial-gradient(1px 1px at 62% 88%, rgba(255,255,255,.35) 0, transparent 0),
+    radial-gradient(1px 1px at  8% 73%, rgba(255,255,255,.42) 0, transparent 0);
+  background-size: 100% 100%;
+}
+
+/* subtle globe glow hint */
+.auth-page::after {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56,225,232,.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── card ── */
 .auth-panel {
-  width: min(440px, 100%);
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 28px;
-  box-shadow: 0 24px 70px rgba(9, 41, 58, 0.26);
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  background: rgba(13, 19, 34, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(150, 170, 210, 0.13);
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.7);
 }
 
+/* ── brand ── */
 .brand {
   display: flex;
   gap: 14px;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  background: #0a7f67;
-  color: #ffffff;
-  font-weight: 800;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(56,225,232,.3), rgba(56,225,232,.15));
+  border: 1px solid rgba(56, 225, 232, 0.35);
+  color: rgb(56, 225, 232);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .04em;
 }
 
 h1 {
   margin: 0;
-  color: #102331;
-  font-size: 26px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #e9eef8;
+  letter-spacing: -.02em;
 }
 
 p {
-  margin: 4px 0 0;
-  color: #546573;
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #8794ab;
 }
 
+/* ── form ── */
 .auth-form {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 label {
   display: grid;
   gap: 7px;
-  color: #273b4a;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #8794ab;
 }
 
 input {
-  height: 44px;
-  border: 1px solid #c8d3dc;
-  border-radius: 6px;
-  padding: 0 12px;
+  height: 46px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(150, 170, 210, 0.18);
+  border-radius: 10px;
+  padding: 0 14px;
   font: inherit;
+  font-size: 15px;
+  color: #e9eef8;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+input::placeholder {
+  color: #59647d;
 }
 
 input:focus {
-  outline: 2px solid rgba(6, 139, 216, 0.25);
-  border-color: #068bd8;
+  border-color: rgba(56, 225, 232, 0.5);
+  box-shadow: 0 0 0 3px rgba(56, 225, 232, 0.1);
 }
 
-button {
-  height: 44px;
-  border: 0;
-  border-radius: 6px;
-  background: #0a7f67;
-  color: #ffffff;
-  font-weight: 800;
+/* ── buttons ── */
+button[type='submit'] {
+  margin-top: 4px;
+  height: 46px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(56,225,232,.22), rgba(56,225,232,.14));
+  border: 1px solid rgba(56, 225, 232, 0.35);
+  color: #bff6f8;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background .2s, box-shadow .2s;
 }
 
-button:disabled {
-  opacity: 0.7;
+button[type='submit']:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(56,225,232,.32), rgba(56,225,232,.22));
+  box-shadow: 0 0 20px rgba(56, 225, 232, 0.15);
+}
+
+button[type='submit']:disabled {
+  opacity: 0.5;
   cursor: wait;
 }
 
 .link-button {
   background: transparent;
-  color: #0b6caa;
+  border: none;
+  height: auto;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 13px;
+  color: #8794ab;
+  cursor: pointer;
+  text-align: center;
+  transition: color .15s;
 }
 
+.link-button:hover {
+  color: rgb(56, 225, 232);
+}
+
+/* ── feedback ── */
 small,
 .error {
-  color: #b3261e;
+  font-size: 12px;
+  color: #f28b82;
 }
 
 .message {
-  color: #0a7f67;
-  font-weight: 700;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #bff6f8;
+  font-weight: 600;
 }
 
 .token {
   overflow-wrap: anywhere;
-  padding: 10px;
-  border-radius: 6px;
-  background: #eff6f5;
-  color: #273b4a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(56, 225, 232, 0.07);
+  border: 1px solid rgba(56, 225, 232, 0.15);
+  color: #8794ab;
+  font-size: 12px;
 }
 
+/* ── footer link ── */
 .switch {
-  margin-top: 18px;
+  margin-top: 22px;
   text-align: center;
+  font-size: 13px;
+  color: #59647d;
 }
 
 a {
-  color: #0b6caa;
-  font-weight: 800;
+  color: #bff6f8;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color .15s;
+}
+
+a:hover {
+  color: rgb(56, 225, 232);
 }
