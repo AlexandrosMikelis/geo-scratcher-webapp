@@ -1,0 +1,41 @@
+<div class="sr-backdrop" (click)="close()"></div>
+
+<div class="sr-card">
+  <button class="sr-close" (click)="close()">×</button>
+
+  <span class="sr-eyebrow">{{ continent || '\xa0' }}</span>
+  <h2 class="sr-name">{{ countryName || 'Loading…' }}</h2>
+
+  <div class="sr-zone">
+    @if (isLoading) {
+      <div class="sr-loading"><div class="sr-spin"></div></div>
+    } @else {
+      <svg class="sr-shape" [attr.viewBox]="'0 0 ' + 340 + ' ' + 340" width="100%" height="100%">
+        <defs>
+          <linearGradient [id]="gradId" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" [attr.stop-color]="themeDef.grad[0]" />
+            <stop offset="1" [attr.stop-color]="themeDef.grad[1]" />
+          </linearGradient>
+        </defs>
+        @if (pathD) {
+          <path [attr.d]="pathD"
+                [attr.fill]="'url(#' + gradId + ')'"
+                [attr.stroke]="themeDef.stroke"
+                [attr.stroke-width]="themeDef.strokeW"
+                stroke-linejoin="round"
+                fill-rule="evenodd" />
+        }
+      </svg>
+      <canvas #scratchCanvas
+              class="sr-coat"
+              [class.revealed]="isRevealed"
+              (pointerdown)="onPointerDown($event)"
+              (pointermove)="onPointerMove($event)">
+      </canvas>
+    }
+  </div>
+
+  <div class="sr-hint mono" [class.done]="isRevealed">
+    {{ isRevealed ? 'Revealed ✓' : 'Drag across the shape · auto-reveals at 60%' }}
+  </div>
+</div>

@@ -1,12 +1,33 @@
 <div class="modal-background" (click)="close()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <p class="eyebrow">Country status</p>
-      <h2>{{ country?.title }}</h2>
-      <div class="status-actions">
-        <button class="visited" (click)="selectStatus('visited')">Visited</button>
-        <button class="lived" (click)="selectStatus('lived')">Lived in</button>
-        <button class="future" (click)="selectStatus('future')">Future travel</button>
-      </div>
-      <button class="close-button" (click)="close()">Close</button>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <p class="eyebrow">Country status</p>
+    <h2>{{ country?.title }}</h2>
+    <div class="status-actions">
+      <button
+        class="visited"
+        [class.active]="currentStatus === 'visited'"
+        (click)="selectStatus('visited')"
+      >
+        ✓ Visited
+        <span *ngIf="currentStatus === 'visited'" class="active-hint">· tap to remove</span>
+      </button>
+      <button
+        class="lived"
+        [class.active]="currentStatus === 'lived'"
+        (click)="selectStatus('lived')"
+      >
+        ⌂ Lived in
+        <span *ngIf="currentStatus === 'lived'" class="active-hint">· tap to remove</span>
+      </button>
+      <button
+        class="future"
+        [class.active]="currentStatus === 'future'"
+        (click)="selectStatus('future')"
+      >
+        ★ Future travel
+        <span *ngIf="currentStatus === 'future'" class="active-hint">· tap to remove</span>
+      </button>
     </div>
+    <button class="close-button" (click)="close()">Close</button>
+  </div>
 </div>

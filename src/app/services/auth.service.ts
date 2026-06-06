@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface AuthUser {
   id: number;
@@ -28,7 +29,7 @@ export interface CountryStatusRecord {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly apiUrl = 'http://127.0.0.1:8000';
+  private readonly apiUrl = environment.apiUrl;
   private readonly tokenKey = 'geo_scratcher_token';
 
   constructor(private http: HttpClient) {}
@@ -36,13 +37,13 @@ export class AuthService {
   register(email: string, username: string, password: string): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${this.apiUrl}/auth/register`, { email, username, password })
-      .pipe(tap((response) => this.storeSession(response)));
+      .pipe(tap((r) => this.storeSession(r)));
   }
 
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${this.apiUrl}/auth/login`, { email, password })
-      .pipe(tap((response) => this.storeSession(response)));
+      .pipe(tap((r) => this.storeSession(r)));
   }
 
   forgotPassword(email: string): Observable<ForgotPasswordResponse> {
@@ -54,29 +55,23 @@ export class AuthService {
   }
 
   me(): Observable<AuthUser> {
-    return this.http.get<AuthUser>(`${this.apiUrl}/auth/me`, {
-      headers: this.authHeaders(),
-    });
+    return this.http.get<AuthUser>(`${this.apiUrl}/auth/me`);
   }
 
   getCountryStatuses(): Observable<CountryStatusRecord[]> {
-    return this.http.get<CountryStatusRecord[]>(`${this.apiUrl}/users/me/countries/statuses`, {
-      headers: this.authHeaders(),
-    });
+    return this.http.get<CountryStatusRecord[]>(`${this.apiUrl}/users/me/countries/statuses`);
   }
 
   setCountryStatus(countryId: string, status: CountryStatus): Observable<CountryStatusRecord> {
     return this.http.put<CountryStatusRecord>(
       `${this.apiUrl}/users/me/countries/${encodeURIComponent(countryId)}/status`,
-      { status },
-      { headers: this.authHeaders() }
+      { status }
     );
   }
 
   clearCountryStatus(countryId: string): Observable<void> {
     return this.http.delete<void>(
-      `${this.apiUrl}/users/me/countries/${encodeURIComponent(countryId)}/status`,
-      { headers: this.authHeaders() }
+      `${this.apiUrl}/users/me/countries/${encodeURIComponent(countryId)}/status`
     );
   }
 
@@ -90,9 +85,5 @@ export class AuthService {
 
   private storeSession(response: AuthResponse): void {
     localStorage.setItem(this.tokenKey, response.access_token);
-  }
-
-  private authHeaders(): HttpHeaders {
-    return new HttpHeaders({ Authorization: `Bearer ${this.token ?? ''}` });
   }
 }

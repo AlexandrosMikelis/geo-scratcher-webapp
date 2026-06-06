@@ -303,11 +303,6 @@ export class GlobeExplorerComponent implements AfterViewInit, OnChanges, OnDestr
       this.selectedId = id;
       this.selectedInfo = info;
       this.countrySelected.emit(info);
-      if (!this.visitedSet.has(id)) {
-        this.visitedSet.add(id);
-        this.scratched.emit(info);
-        this.visitedChange.emit([...this.visitedSet]);
-      }
     });
     this.flyTo(info.lat, info.lng, 0.55, 1100);
     this.refreshPolys();

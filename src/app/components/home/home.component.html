@@ -1,8 +1,20 @@
 <app-globe-explorer
   class="globe-host"
   [visited]="visitedIds"
+
+  [theme]="currentTheme"
+  (themeChange)="currentTheme = $event"
   (countrySelected)="onCountrySelected($event)"
 ></app-globe-explorer>
+
+@if (showScratch && scratchInfo) {
+  <app-scratch-reveal
+    [countryInfo]="scratchInfo"
+    [theme]="currentTheme"
+    (revealed)="onScratchRevealed()"
+    (closed)="onScratchClosed()"
+  ></app-scratch-reveal>
+}
 
 <app-country-status-modal
   *ngIf="showModal"
